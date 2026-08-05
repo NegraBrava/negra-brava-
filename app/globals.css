@@ -1,1 +1,30 @@
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: theme("colors.nb.black");
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-none border border-nb-gold-light bg-gradient-to-r from-nb-gold to-nb-gold-light px-9 py-4 text-sm font-bold uppercase tracking-wideish text-nb-black shadow-[0_4px_24px_rgba(232,163,61,0.4)] transition hover:brightness-110;
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center justify-center rounded-none border border-nb-gold-light px-8 py-4 text-sm uppercase tracking-wideish text-nb-gold-light transition hover:bg-nb-gold-light hover:text-nb-black;
+  }
+
+  .btn-whatsapp {
+    @apply inline-flex items-center justify-center gap-2 rounded-none bg-[#25D366] px-8 py-4 text-sm font-semibold uppercase tracking-wideish text-white transition hover:opacity-90;
+  }
+
+  .badge-bestseller {
+    @apply absolute left-2.5 top-2.5 z-10 bg-nb-gold px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-nb-black;
+  }
+
+  .badge-new {
+    @apply absolute left-2.5 top-2.5 z-10 bg-nb-flame px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-nb-cream;
+  }
+}
