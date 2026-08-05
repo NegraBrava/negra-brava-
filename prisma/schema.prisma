@@ -1,0 +1,242 @@
+// ============================================================
+// Negra Brava SpA — Esquema de base de datos (PostgreSQL)
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Catálogo ----------
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  slug      String    @unique
+  imageUrl  String?
+  order     Int       @default(0)
+  products  Product[]
+  createdAt DateTime  @default(now())
+}
+
+model Product {
+  id            String          @id @default(cuid())
+  code          String          @unique
+  name          String
+  slug          String          @unique
+  description   String
+  material      String
+  color         String
+  price         Int
+  compareAtPrice Int?
+  stock         Int             @default(0)
+  minStock      Int             @default(3)
+  status        ProductStatus   @default(ACTIVO)
+  featured      Boolean         @default(false)
+  isNew         Boolean         @default(false)
+  categoryId    String
+  category      Category        @relation(fields: [categoryId], references: [id])
+  images        ProductImage[]
+  orderItems    OrderItem[]
+  relatedTo     RelatedProduct[] @relation("ProductRelations")
+  relatedFrom   RelatedProduct[] @relation("RelatedProducts")
+  cartItems     CartItem[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([categoryId])
+  @@index([status])
+}
+
+enum ProductStatus {
+  ACTIVO
+  AGOTADO
+  DESCONTINUADO
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  altText   String?
+  order     Int     @default(0)
+}
+
+model RelatedProduct {
+  id               String  @id @default(cuid())
+  productId        String
+  relatedProductId String
+  product          Product @relation("ProductRelations", fields: [productId], references: [id], onDelete: Cascade)
+  relatedProduct   Product @relation("RelatedProducts", fields: [relatedProductId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, relatedProductId])
+}
+
+// ---------- Clientes y carrito ----------
+
+model Customer {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String   @unique
+  phone     String
+  address   String?
+  comuna    String?
+  region    String?
+  optInWhatsapp Boolean @default(true)
+  orders    Order[]
+  carts     Cart[]
+  createdAt DateTime @default(now())
+}
+
+model Cart {
+  id         String     @id @default(cuid())
+  customerId String?
+  customer   Customer?  @relation(fields: [customerId], references: [id])
+  sessionId  String?    @unique
+  items      CartItem[]
+  abandonedReminderSentAt DateTime?
+  updatedAt  DateTime   @updatedAt
+  createdAt  DateTime   @default(now())
+}
+
+model CartItem {
+  id        String  @id @default(cuid())
+  cartId    String
+  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int     @default(1)
+
+  @@unique([cartId, productId])
+}
+
+// ---------- Pedidos ----------
+
+model Order {
+  id             String        @id @default(cuid())
+  orderNumber    String        @unique
+  customerId     String
+  customer       Customer      @relation(fields: [customerId], references: [id])
+  items          OrderItem[]
+  subtotal       Int
+  shippingCost   Int
+  discount       Int           @default(0)
+  couponCode     String?
+  total          Int
+  shippingMethod String
+  paymentMethod  String
+  paymentStatus  PaymentStatus @default(PENDIENTE)
+  orderStatus    OrderStatus   @default(RECIBIDO)
+  address        String
+  comuna         String
+  region         String
+  notes          String?
+  transbankToken String?
+  mercadoPagoId  String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Int
+}
+
+enum PaymentStatus {
+  PENDIENTE
+  PAGADO
+  RECHAZADO
+  REEMBOLSADO
+}
+
+enum OrderStatus {
+  RECIBIDO
+  EN_PREPARACION
+  DESPACHADO
+  ENTREGADO
+  CANCELADO
+}
+
+// ---------- Marketing ----------
+
+model Coupon {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  type          CouponType
+  value         Int
+  minPurchase   Int      @default(0)
+  usageLimit    Int?
+  usedCount     Int      @default(0)
+  active        Boolean  @default(true)
+  expiresAt     DateTime?
+  createdAt     DateTime @default(now())
+}
+
+enum CouponType {
+  PORCENTAJE
+  MONTO_FIJO
+}
+
+model Banner {
+  id        String   @id @default(cuid())
+  title     String
+  imageUrl  String
+  linkUrl   String?
+  active    Boolean  @default(true)
+  order     Int      @default(0)
+  startsAt  DateTime?
+  endsAt    DateTime?
+}
+
+model FAQ {
+  id       String @id @default(cuid())
+  question String
+  answer   String
+  order    Int    @default(0)
+}
+
+// ---------- WhatsApp ----------
+
+model WhatsappMessage {
+  id           String   @id @default(cuid())
+  phone        String
+  direction    MsgDirection
+  messageType  String
+  content      String
+  handledBy    String?
+  createdAt    DateTime @default(now())
+
+  @@index([phone])
+}
+
+enum MsgDirection {
+  ENTRANTE
+  SALIENTE
+}
+
+// ---------- Panel administrador ----------
+
+model AdminUser {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      AdminRole @default(VENDEDOR)
+  createdAt DateTime @default(now())
+}
+
+enum AdminRole {
+  ADMIN
+  VENDEDOR
+}
